@@ -2,18 +2,25 @@
 PYTHON_VERSION = "3.11"
 
 [phases.setup]
+# keep minimal system pkgs provided by nixpacks
 nixPkgs = ["python311", "gcc", "pkg-config", "freetype", "libpng", "libjpeg"]
 
 [phases.install]
+# Create a virtualenv in /opt/venv (user-writable) and use its pip
 cmds = [
-  "python -m ensurepip --default-pip || true",
-  "python -c \"import importlib.util, sys; exit(0 if importlib.util.find_spec('pip') else 1)\" || (curl -sS https://bootstrap.pypa.io/get-pip.py | python -)",
-  "python -m pip install --upgrade pip setuptools wheel",
-  "python -m pip install --no-cache-dir -r requirements.txt"
+  # create venv (if it fails, try to continue)
+  "python -m venv /opt/venv || true",
+
+  # Ensure the env's python exists (some images pre-create it)
+  "if [ -x /opt/venv/bin/python ]; then /opt/venv/bin/python -m pip install --upgrade pip setuptools wheel; else python -m ensurepip --default-pip || true; fi",
+
+  # If venv created, use venv's pip, otherwise fallback to system python's pip
+  "if [ -x /opt/venv/bin/python ]; then /opt/venv/bin/python -m pip install --no-cache-dir -r requirements.txt; else python -m pip install --no-cache-dir -r requirements.txt; fi"
 ]
 
 [phases.build]
 cmds = ["echo 'Build completed'"]
 
 [start]
-cmd = "python railway_crypto_bot.py"
+# ensure we run the app with venv python if venv exists
+cmd = "if [ -x /opt/venv/bin/python ]; then /opt/venv/bin/python railway_crypto_bot.py; else python railway_crypto_bot.py; fi"
