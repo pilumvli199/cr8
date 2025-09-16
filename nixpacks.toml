@@ -1,0 +1,19 @@
+[variables]
+PYTHON_VERSION = "3.11"
+
+[phases.setup]
+nixPkgs = ["python311", "gcc", "pkg-config", "freetype", "libpng", "libjpeg"]
+
+[phases.install]
+cmds = [
+  "python -m ensurepip --default-pip || true",
+  "python -c \"import importlib.util, sys; exit(0 if importlib.util.find_spec('pip') else 1)\" || (curl -sS https://bootstrap.pypa.io/get-pip.py | python -)",
+  "python -m pip install --upgrade pip setuptools wheel",
+  "python -m pip install --no-cache-dir -r requirements.txt"
+]
+
+[phases.build]
+cmds = ["echo 'Build completed'"]
+
+[start]
+cmd = "python railway_crypto_bot.py"
